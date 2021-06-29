@@ -156,6 +156,21 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
       type=d.T.string,
     ),
     licenseSecretName: 'gem-license',
+    '#adminTokenSecretName':: d.val(
+      default=self.adminTokenSecretName,
+      help=|||
+        When generating an admin token using the `tokengen` target, the result is written to the Kubernetes
+        Secret `adminTokenSecretName`.
+        There are two versions of the token in the Secret: `token` is the raw token obtained from the `tokengen`,
+        and `grafana-token` is a base64 encoded version that can be used directly when provisioning Grafana
+        via configuration file.
+        To retrieve these tokens from Kubernetes using `kubectl`:
+        $ kubectl get secret gem-admin-token -o jsonpath="{.data.token}" | base64 --decode ; echo
+        $ kubectl get secret gem-admin-token -o jsonpath="{.data.grafana-token}" | base64 --decode ; echo
+      |||,
+      type=d.T.string,
+    ),
+    adminTokenSecretName: 'gem-admin-token',
   },
   '#_images':: d.obj('`_images` contains fields for container images.'),
   _images:: {
@@ -538,9 +553,13 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
     createSecretContainer::
       container.new('create-secret', this._images.kubectl)
       + container.withCommand([
-        '/bin/bash',
-        '-euc',
-        'kubectl create secret generic gem-admin-token --from-file=token=/shared/admin-token --from-literal=grafana-token="$(base64 <(echo :$(cat /shared/admin-token)))"',
+        'kubectl',
+        'create',
+        'secret',
+        'generic',
+        this._config.adminTokenSecretName,
+        '--from-file=token=/shared/admin-token',
+        '--from-literal=grafana-token="$(base64 <(echo :$(cat /shared/admin-token)))"',
       ])
       + container.withVolumeMounts([{ mountPath: '/shared', name: 'shared' }])
       // Need to run as root because the GEM container does.
