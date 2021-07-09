@@ -47,6 +47,8 @@ local enterprise-metrics = import "github.com/grafana/jsonnet-libs/enterprise-me
     * [`string alertmanager.args.runtime-config.file`](#string-alertmanagerargsruntime-configfile)
   * [`obj alertmanager.container`](#obj-alertmanagercontainer)
     
+  * [`obj alertmanager.persistentVolumeClaim`](#obj-alertmanagerpersistentvolumeclaim)
+    
   * [`obj alertmanager.service`](#obj-alertmanagerservice)
     
   * [`obj alertmanager.statefulSet`](#obj-alertmanagerstatefulset)
@@ -59,6 +61,8 @@ local enterprise-metrics = import "github.com/grafana/jsonnet-libs/enterprise-me
     * [`string compactor.args.memberlist.join`](#string-compactorargsmemberlistjoin)
     * [`string compactor.args.runtime-config.file`](#string-compactorargsruntime-configfile)
   * [`obj compactor.container`](#obj-compactorcontainer)
+    
+  * [`obj compactor.persistentVolumeClaim`](#obj-compactorpersistentvolumeclaim)
     
   * [`obj compactor.service`](#obj-compactorservice)
     
@@ -109,6 +113,8 @@ local enterprise-metrics = import "github.com/grafana/jsonnet-libs/enterprise-me
     * [`string ingester.args.memberlist.join`](#string-ingesterargsmemberlistjoin)
     * [`string ingester.args.runtime-config.file`](#string-ingesterargsruntime-configfile)
   * [`obj ingester.container`](#obj-ingestercontainer)
+    
+  * [`obj ingester.persistentVolumeClaim`](#obj-ingesterpersistentvolumeclaim)
     
   * [`obj ingester.podDisruptionBudget`](#obj-ingesterpoddisruptionbudget)
     
@@ -181,6 +187,8 @@ local enterprise-metrics = import "github.com/grafana/jsonnet-libs/enterprise-me
     * [`string storeGateway.args.memberlist.join`](#string-storegatewayargsmemberlistjoin)
     * [`string storeGateway.args.runtime-config.file`](#string-storegatewayargsruntime-configfile)
   * [`obj storeGateway.container`](#obj-storegatewaycontainer)
+    
+  * [`obj storeGateway.persistentVolumeClaim`](#obj-storegatewaypersistentvolumeclaim)
     
   * [`obj storeGateway.podDisruptionBudget`](#obj-storegatewaypoddisruptionbudget)
     
@@ -375,6 +383,10 @@ $ kubectl create secret generic gem-license -from-file=license.jwt
 
 `container` is a convenience field that can be used to modify the alertmanager container.
 
+## obj alertmanager.persistentVolumeClaim
+
+`persistentVolumeClaim` is a convenience field that can be used to modify the alertmanager PersistentVolumeClaim.
+
 ## obj alertmanager.service
 
 `service` is the Kubernetes Service for the alertmanager.
@@ -423,6 +435,10 @@ $ kubectl create secret generic gem-license -from-file=license.jwt
 ## obj compactor.container
 
 `container` is a convenience field that can be used to modify the compactor container.
+
+## obj compactor.persistentVolumeClaim
+
+`persistentVolumeClaim` is a convenience field that can be used to modify the compactor PersistentVolumeClaim.
 
 ## obj compactor.service
 
@@ -626,6 +642,10 @@ $ kubectl create secret generic gem-license -from-file=license.jwt
 ## obj ingester.container
 
 `container` is a convenience field that can be used to modify the ingester container.
+
+## obj ingester.persistentVolumeClaim
+
+`persistentVolumeClaim` is a convenience field that can be used to modify the ingester PersistentVolumeClaim. It is recommended to use a fast storage class.
 
 ## obj ingester.podDisruptionBudget
 
@@ -872,6 +892,10 @@ $ kubectl create secret generic gem-license -from-file=license.jwt
 ## obj storeGateway.container
 
 `container` is a convenience field that can be used to modify the store-gateway container.
+
+## obj storeGateway.persistentVolumeClaim
+
+`persistentVolumeClaim` is a convenience field that can be used to modify the store-gateway PersistentVolumeClaim.
 
 ## obj storeGateway.podDisruptionBudget
 

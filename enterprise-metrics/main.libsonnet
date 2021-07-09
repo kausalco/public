@@ -82,6 +82,7 @@ local k = import 'github.com/grafana/jsonnet-libs/ksonnet-util/kausal.libsonnet'
       deployment = k.apps.v1.deployment,
       job = k.batch.v1.job,
       policyRule = k.rbac.v1.policyRule,
+      persistentVolumeClaim = k.core.v1.persistentVolumeClaim,
       role = k.rbac.v1.role,
       roleBinding = k.rbac.v1.roleBinding,
       subject = k.rbac.v1.subject,
@@ -184,7 +185,6 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
       + container.withPorts(cortex.util.defaultPorts)
       + container.resources.withLimits({ cpu: '2', memory: '4Gi' })
       + container.resources.withRequests({ cpu: '500m', memory: '1Gi' })
-      + cortex.jaeger_mixin
       + cortex.util.readinessProbe,
     '#deployment':: d.obj('`deployment` is the Kubernetes Deployment for the admin-api.'),
     deployment:
@@ -221,10 +221,13 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
       cortex.alertmanager_container
       + container.withArgs(removeNamespaceReferences(util.mapToFlags(alertmanager.args)))
       + container.withImage(this._images.gem),
+    '#persistentVolumeClaim':: d.obj('`persistentVolumeClaim` is a convenience field that can be used to modify the alertmanager PersistentVolumeClaim.'),
+    persistentVolumeClaim:: cortex.alertmanager_pvc,
     '#statefulSet':: d.obj('`statefulSet` is the Kubernetes StatefulSet for the alertmanager.'),
     statefulSet:
       cortex.alertmanager_statefulset { metadata+: { namespace:: null } }  // Hide the metadata.namespace field as Tanka provides that.
       + statefulSet.spec.selector.withMatchLabelsMixin({ name: 'alertmanager' })
+      + statefulSet.spec.withVolumeClaimTemplates([self.persistentVolumeClaim])
       + statefulSet.spec.template.metadata.withLabelsMixin({ name: 'alertmanager', gossip_ring_member: 'true' })
       + statefulSet.spec.template.spec.withContainers([alertmanager.container])
       // Remove Cortex volumes.
@@ -245,9 +248,16 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
       cortex.compactor_container
       + container.withArgs(removeNamespaceReferences(util.mapToFlags(compactor.args)))
       + container.withImage(this._images.gem),
+    '#persistentVolumeClaim':: d.obj('`persistentVolumeClaim` is a convenience field that can be used to modify the compactor PersistentVolumeClaim.'),
+    persistentVolumeClaim::
+      persistentVolumeClaim.new()
+      + persistentVolumeClaim.mixin.spec.resources.withRequests({ storage: '250Gi' })
+      + persistentVolumeClaim.mixin.spec.withAccessModes(['ReadWriteOnce'])
+      + persistentVolumeClaim.mixin.metadata.withName('compactor-data'),
     '#statefulSet':: d.obj('`statefulSet` is the Kubernetes StatefulSet for the compactor.'),
     statefulSet:
       cortex.compactor_statefulset { metadata+: { namespace:: null } }  // Hide the metadata.namespace field as Tanka provides that.
+      + statefulSet.spec.withVolumeClaimTemplates([self.persistentVolumeClaim])
       + statefulSet.spec.selector.withMatchLabelsMixin({ name: 'compactor' })
       + statefulSet.spec.template.metadata.withLabelsMixin({ name: 'compactor', gossip_ring_member: 'true' })
       + statefulSet.spec.template.spec.withContainers([compactor.container])
@@ -328,7 +338,6 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
       + container.withPorts(cortex.util.defaultPorts)
       + container.resources.withLimits({ cpu: '2', memory: '4Gi' })
       + container.resources.withRequests({ cpu: '500m', memory: '1Gi' })
-      + cortex.jaeger_mixin
       + cortex.util.readinessProbe,
     '#deployment':: d.obj('`deployment` is the Kubernetes Deployment for the gateway.'),
     deployment:
@@ -360,13 +369,20 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
       + container.withArgs(removeNamespaceReferences(util.mapToFlags(ingester.args)))
       + container.withImage(this._images.gem)
       + container.withVolumeMounts([{ name: 'ingester-data', mountPath: '/data' }]),
+    '#persistentVolumeClaim':: d.obj('`persistentVolumeClaim` is a convenience field that can be used to modify the ingester PersistentVolumeClaim. It is recommended to use a fast storage class.'),
+    persistentVolumeClaim::
+      persistentVolumeClaim.new()
+      + persistentVolumeClaim.mixin.spec.resources.withRequests({ storage: '100Gi' })
+      + persistentVolumeClaim.mixin.spec.withAccessModes(['ReadWriteOnce'])
+      + persistentVolumeClaim.mixin.metadata.withName('ingester-data'),
     '#podDisruptionBudget':: d.obj('`podDisruptionBudget` is the Kubernetes PodDisruptionBudget for the ingester.'),
     podDisruptionBudget: cortex.ingester_pdb,
     '#statefulSet':: d.obj('`statefulSet` is the Kubernetes StatefulSet for the ingester.'),
     statefulSet:
       cortex.ingester_statefulset { metadata+: { namespace:: null } }  // Hide the metadata.namespace field as Tanka provides that.
-      + deployment.spec.selector.withMatchLabelsMixin({ name: 'ingester' })
-      + deployment.spec.template.metadata.withLabelsMixin({ name: 'ingester', gossip_ring_member: 'true' })
+      + statefulSet.spec.withVolumeClaimTemplates([self.persistentVolumeClaim])
+      + statefulSet.spec.selector.withMatchLabelsMixin({ name: 'ingester' })
+      + statefulSet.spec.template.metadata.withLabelsMixin({ name: 'ingester', gossip_ring_member: 'true' })
       + statefulSet.spec.template.spec.withContainers([ingester.container])
       // Remove Cortex volumes.
       + statefulSet.spec.template.spec.withVolumes([])
@@ -495,11 +511,18 @@ local removeNamespaceReferences(args) = std.map(function(arg) std.strReplace(arg
       cortex.store_gateway_container
       + container.withArgs(removeNamespaceReferences(util.mapToFlags(storeGateway.args)))
       + container.withImage(this._images.gem),
+    '#persistentVolumeClaim':: d.obj('`persistentVolumeClaim` is a convenience field that can be used to modify the store-gateway PersistentVolumeClaim.'),
+    persistentVolumeClaim::
+      persistentVolumeClaim.new()
+      + persistentVolumeClaim.mixin.spec.resources.withRequests({ storage: '100Gi' })
+      + persistentVolumeClaim.mixin.spec.withAccessModes(['ReadWriteOnce'])
+      + persistentVolumeClaim.mixin.metadata.withName('store-gateway-data'),
     '#podDisruptionBudget':: d.obj('`podDisruptionBudget` is the Kubernetes PodDisruptionBudget for the store-gateway.'),
     podDisruptionBudget: cortex.store_gateway_pdb,
     '#statefulSet':: d.obj('`statefulSet` is the Kubernetes StatefulSet for the store-gateway.'),
     statefulSet:
       cortex.store_gateway_statefulset { metadata+: { namespace:: null } }  // Hide the metadata.namespace field as Tanka provides that.
+      + statefulSet.spec.withVolumeClaimTemplates([self.persistentVolumeClaim])
       + statefulSet.spec.selector.withMatchLabelsMixin({ name: 'store-gateway' })
       + statefulSet.spec.template.metadata.withLabelsMixin({ name: 'store-gateway', gossip_ring_member: 'true' })
       + statefulSet.spec.template.spec.withContainers([storeGateway.container])
