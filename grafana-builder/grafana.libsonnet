@@ -137,7 +137,7 @@
     version: 0,
   },
 
-  row(title):: {
+  row(title, autoPanelSpan=true):: {
     _panels:: [],
     addPanel(panel):: self {
       _panels+: [panel],
@@ -147,7 +147,7 @@
       // Automatically distribute panels within a row.
       local n = std.length(self._panels);
       [
-        p { span: std.floor(12 / n) }
+        p(if autoPanelSpan then { span: std.floor(12 / n) } else {})
         for p in self._panels
       ],
 
@@ -161,7 +161,7 @@
     titleSize: 'h6',
   },
 
-  panel(title):: {
+  panel(title, span=6):: {
     aliasColors: {},
     bars: false,
     dashLength: 10,
@@ -187,7 +187,7 @@
     renderer: 'flot',
     seriesOverrides: [],
     spaceLength: 10,
-    span: 6,
+    span: span,
     stack: false,
     steppedLine: false,
     targets: [],
