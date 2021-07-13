@@ -116,6 +116,7 @@
           "subdir": ""
         }
       },
+      "name": "rfrail3-grafana-dashboards",
       "version": "master"
     }
   ],
